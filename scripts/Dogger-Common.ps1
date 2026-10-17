@@ -91,7 +91,7 @@ function Get-DoggerDirtyPaths {
         $rest = $line.Substring(3).Trim('"')
         foreach ($part in ($rest -split ' -> ')) { $paths.Add($part.Trim('"')) }
     }
-    return , $paths.ToArray()
+    return $paths.ToArray()
 }
 
 function New-DoggerSyncResult {

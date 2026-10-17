@@ -99,6 +99,11 @@ function Invoke-ServeRequest {
         return
     }
 
+    if ($path -eq '/favicon.ico') {
+        Send-ServeBytes -Response $response -Status 204 -ContentType 'image/x-icon' -Bytes @() -HeadOnly $true
+        return
+    }
+
     $relative = $path.TrimStart('/')
     if ($relative -eq '') { $relative = 'index.html' }
     $segments = $relative.Split('/')
@@ -165,6 +170,8 @@ while ($true) {
     $context = $task.Result
     try {
         Invoke-ServeRequest -Context $context
+    } catch [ObjectDisposedException] {
+        # The client hung up before we answered (for example a port check). Nothing to report.
     } catch {
         Write-ServeLog ("Request failed: {0}" -f $_.Exception.Message)
     } finally {

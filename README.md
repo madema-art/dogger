@@ -68,6 +68,56 @@ tools/make_peanut_sprite.py   regenerates the sprite from the original photo
 
 The sprite comes from the photo's flat blue backdrop, so it is keyed out by colour and despilled at the edges. Rerun the tool with your own photo to swap Peanut out.
 
+## Play the latest build on Windows
+
+Double-click **`Start-Dogger.bat`** in the Dogger folder. It:
+
+1. checks GitHub for the newest commit on `origin/claude/epic-einstein-mgwon8`,
+2. updates your copy if that is safe,
+3. starts the local server (or reuses the one already running) and checks that it answers,
+4. opens Dogger in Chrome (or your default browser if Chrome is not installed).
+
+No terminal commands are needed. The launcher window closes on its own when all is well, and waits for Enter if it has a warning.
+
+Other options (run from a command prompt, or make a shortcut with the options in its target):
+
+- `Start-Dogger.bat -Stop` stops the local server.
+- `Start-Dogger.bat -CreateDesktopShortcut` puts a **Dogger** shortcut on your desktop.
+- `Start-Dogger.bat -NoUpdate` runs your local copy without checking GitHub.
+
+You can also copy `Start-Dogger.bat` to the desktop. The copy remembers where the repository is, from the last time you ran it from the Dogger folder.
+
+Requirements: Git for Windows (Git must be on PATH). Windows PowerShell and Chrome come with Windows, but Chrome is optional.
+
+### What happens on launch
+
+| Situation | What the launcher does |
+| --- | --- |
+| Up to date | Runs the local copy. |
+| Behind GitHub, no conflicts with your files | Fast-forwards to the newest commit (never resets, never deletes), then runs it. |
+| Behind GitHub, but you have uncommitted edits to a file the update changes | Skips the update, leaves everything as it is, shows the file names, and runs your local copy. Commit, stash, or move those files and launch again. |
+| Uncommitted edits to other files, or untracked files | The update goes ahead. Your files are kept. |
+| Local commits that GitHub does not have | Runs your local version. Nothing is pushed or changed. |
+| Local and GitHub both have new commits (diverged) | Stops with an explanation and changes nothing. |
+| Copy is on a different branch | Switches to the Dogger branch only when there are no local changes. Otherwise it leaves the copy alone. |
+| GitHub cannot be reached | Shows a warning and runs the local copy. |
+
+Nothing is ever deleted or reset by the launcher. Git itself also refuses any update that would overwrite a file you have changed.
+
+### The server
+
+- Serves the repository folder at `http://localhost:8765/` (falls back to 8766-8774 if the port is taken by another program).
+- Runs hidden in the background, so Dogger keeps working after the launcher window closes.
+- Checks GitHub about every two minutes and applies safe updates on its own, so a Claude session pushing to the branch reaches your copy without a relaunch.
+- `version.json` at the top of the site says which commit is served. The file is git-ignored.
+- Logs: `%LOCALAPPDATA%\Dogger\launcher.log` and `serve.log`.
+
+### Start-screen update check
+
+While the title screen is showing, Dogger checks `version.json` about every 20 seconds. The page remembers the commit it loaded. When the local server reports a newer commit, the title screen shows a short "Newer Dogger build found" note and refreshes into the new build after a moment. The check never runs during play, and a refresh never interrupts a game. If a newer build arrives mid-game, the refresh waits until you return to the title screen.
+
+The check is in `js/build-watch.js`. It only reads the local `version.json`. It does not call GitHub.
+
 ## Notes
 
 - The game is designed for a 9:16 portrait window. It scales to fit any window and letterboxes the rest.

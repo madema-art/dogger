@@ -118,6 +118,7 @@ if ($NoUpdate) {
     switch ($sync.Status) {
         'current' {
             Write-DoggerStatus -Kind ok -Message ("Already up to date ({0})." -f $sync.Before)
+            foreach ($line in $sync.Details) { Write-DoggerStatus -Kind info -Message $line }
         }
         'updated' {
             Write-DoggerStatus -Kind ok -Message ("Updated {0} -> {1}. {2}" -f $sync.Before, $sync.After, $sync.Message)
