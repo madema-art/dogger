@@ -23,12 +23,12 @@
       justify-content: center;
     }
 
-    /* Fit the 9:16 play field to the window, letterboxing the rest. */
+    /* The board is a fixed 16:9 arcade screen. Scale it to fit the window and letterbox the rest. */
     canvas {
       display: block;
-      width: min(100vw, calc(100vh * 9 / 16));
+      width: min(100vw, calc(100vh * 16 / 9));
       height: auto;
-      aspect-ratio: 9 / 16;
+      aspect-ratio: 16 / 9;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
@@ -37,10 +37,13 @@
   </style>
 </head>
 <body>
-  <canvas id="game" width="540" height="960" tabindex="0" aria-label="Dogger: help Peanut cross the street"></canvas>
+  <canvas id="game" width="1280" height="720" tabindex="0" aria-label="Dogger: help Peanut cross the street"></canvas>
 
   <script src="js/audio.js"></script>
   <script src="js/levels.js"></script>
+  <script src="js/art-peanut.js"></script>
+  <script src="js/art-vehicles.js"></script>
+  <script src="js/art-board.js"></script>
   <script src="js/render.js"></script>
   <script src="js/input.js"></script>
   <script src="js/build-watch.js"></script>

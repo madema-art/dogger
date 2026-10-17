@@ -1,20 +1,23 @@
-// Dogger game loop: screens, Peanut's hops, traffic, rewards, lives and levels.
+// Dogger game loop: screens, Peanut's grid hops, traffic, rewards, lives and levels.
 (function (global) {
   'use strict';
 
   const D = global.Dogger;
   const L = D.Levels;
   const Effects = D.Render.Effects;
-  const { WIDTH: W, HEIGHT: H, COLS, START_COL, colX, rowY } = L;
+  const W = L.WIDTH;
+  const H = L.HEIGHT;
+  const { COLS, START_COL, VEHICLES, colX, rowY } = L;
 
-  const HOP_TIME = 0.13;
+  const HOP_TIME = 0.12;
+  const LAND_TIME = 0.1;
   const START_LIVES = 3;
   const MAX_LIVES = 5;
   const LIFE_EVERY = 2000;
   const COMBO_WINDOW = 5;
-  const DOG_HIT = { x: 18, y: 22 };
-  const CAR_INSET = 6;
-  const NEAR_MISS = 14;
+  const DOG_HIT = { x: 12, y: 12 };
+  const CAR_INSET = 5;
+  const NEAR_MISS = 12;
   const INTRO_TIME = 2.8;
   const CLEAR_TIME = 3.4;
   const DEATH_TIME = 1.2;
@@ -34,13 +37,14 @@
       col: START_COL,
       row: 0,
       x: colX(START_COL),
-      y: rowY(0),
+      y: 0,
       state: 'idle', // idle | hop | spawn | dead
+      dir: 'up',
       t: 0,
       from: null,
       to: null,
       lift: 0,
-      facing: 1,
+      landT: null,
       bestRow: 0,
       step: 0,
     };
@@ -74,6 +78,8 @@
       this.input = new D.Input(() => this.sound.unlock());
       this.best = readBest();
       this.buildWatch = new D.BuildWatch();
+      this.peanutSprite = D.Peanut.createSprite();
+      this.boardCanvas = null;
       this.t = 0;
       this.modeT = 0;
       this.mode = 'loading';
@@ -185,7 +191,7 @@
       this.setMode('win');
       this.sound.win();
       Effects.burst(this.effects, W / 2, H * 0.4, {
-        count: 60, speed: 340, life: 1.6, kind: 'confetti', size: 6, gravity: 260, lift: 260,
+        count: 80, speed: 380, life: 1.7, kind: 'confetti', size: 6, gravity: 260, lift: 260,
         colors: ['#FFE066', '#7CF2C4', '#FFFFFF', '#FF8FD8', '#8EC5FF'],
       });
     }
@@ -210,20 +216,29 @@
     loadLevel(index) {
       this.levelIndex = index;
       this.level = L.build(index);
-      this.lanes = this.level.lanes.map((lane) => ({ ...lane, vehicles: [], last: null, nextGap: lane.gapMin }));
+      this.boardCanvas = D.Board.buildBoard(this.level, this.dpr);
+      this.lanes = this.level.lanes.map((lane) => ({
+        ...lane,
+        vehicles: [],
+        last: null,
+        nextGap: lane.gapMin,
+        spawned: 0,
+      }));
       this.crossings = 0;
       this.levelDeaths = 0;
       this.combo = 0;
       this.comboTimer = 0;
       this.queued = null;
       this.dog = newDog();
+      this.dog.y = rowY(this.level.geo, 0);
       this.placeBones();
-      // Warm up the traffic so the street is already busy when the level starts.
-      for (let i = 0; i < 200; i++) this.updateTraffic(1 / 30);
+      // Warm up the traffic so the board is already busy when the level starts.
+      for (let i = 0; i < 360; i++) this.updateTraffic(1 / 30);
     }
 
     resetDog() {
       this.dog = newDog();
+      this.dog.y = rowY(this.level.geo, 0);
       this.dog.state = 'spawn';
       this.queued = null;
     }
@@ -232,28 +247,29 @@
       const free = [];
       for (let row = 1; row < this.level.goalRow; row++) {
         const code = this.level.rows[row];
-        if (code !== 'R' && code !== 'M') continue;
+        if (code === 'S' || code === 'G') continue;
         for (let col = 0; col < COLS; col++) {
-          if (!this.coneAt(col, row)) free.push({ col, row });
+          if (!this.isBlocked(col, row)) free.push({ col, row });
         }
       }
       const picks = L.shuffle(free, Math.random).slice(0, this.level.def.bones);
       this.bones = picks.map((p) => ({ ...p, got: false, seed: Math.random() * 6 }));
     }
 
-    coneAt(col, row) {
-      return this.level.cones.some((c) => c.col === col && c.row === row);
+    isBlocked(col, row) {
+      return this.level.blocked.has(col + ':' + row);
     }
 
     // ---------- traffic ----------
 
     updateTraffic(dt) {
+      const geo = this.level.geo;
       for (const lane of this.lanes) {
-        const y = rowY(lane.row);
+        const y = rowY(geo, lane.row);
         for (const v of lane.vehicles) {
           v.x += v.dir * lane.speed * dt;
           v.phase += dt;
-          v.y = y + (v.type === 'scooter' ? Math.sin(v.phase * 3) * 5 : 0);
+          v.y = y + (v.kind === 'scooter' || v.kind === 'bike' ? Math.sin(v.phase * 3) * 4 : 0);
         }
         lane.vehicles = lane.vehicles.filter((v) => (v.dir > 0 ? v.x - v.w / 2 < W + 60 : v.x + v.w / 2 > -60));
 
@@ -265,14 +281,26 @@
             ? last.x - last.w / 2 + 6
             : W + 6 - (last.x + last.w / 2);
         if (space >= lane.nextGap) {
-          const pool = this.level.def.pool;
-          const type = pool[Math.floor(Math.random() * pool.length)];
-          const spec = L.VEHICLES[type];
+          const type = lane.pool[Math.floor(Math.random() * lane.pool.length)];
+          const spec = VEHICLES[type];
           const x = lane.dir > 0 ? -6 - spec.w / 2 : W + 6 + spec.w / 2;
-          const v = { type, dir: lane.dir, x, y, w: spec.w, h: spec.h, phase: Math.random() * 6, near: false };
+          const v = {
+            type,
+            kind: spec.kind,
+            dir: lane.dir,
+            x,
+            y,
+            w: spec.w,
+            h: spec.h,
+            phase: Math.random() * 6,
+            near: false,
+          };
           lane.vehicles.push(v);
           lane.last = v;
-          lane.nextGap = lane.gapMin * (1 + Math.random() * 0.7);
+          lane.spawned += 1;
+          // Delivery lanes come in bunches: a short pause after every pair.
+          const bunch = lane.bursty && lane.spawned % 2 === 0 ? 2.6 : 1;
+          lane.nextGap = lane.gapMin * (1 + Math.random() * 0.7) * bunch;
         }
       }
     }
@@ -312,17 +340,18 @@
       const col = dog.col + dc;
       const row = dog.row + dr;
       if (row < 0) return;
-      if (col < 0 || col >= COLS || row > this.level.goalRow || this.coneAt(col, row)) {
+      if (col < 0 || col >= COLS || row > this.level.goalRow || this.isBlocked(col, row)) {
         this.sound.blocked();
         return;
       }
 
-      if (dc) dog.facing = dc > 0 ? 1 : -1;
+      dog.dir = dc > 0 ? 'right' : dc < 0 ? 'left' : dr > 0 ? 'up' : 'down';
       dog.from = { x: dog.x, y: dog.y };
-      dog.to = { col, row, x: colX(col), y: rowY(row) };
+      dog.to = { col, row, x: colX(col), y: rowY(this.level.geo, row) };
       dog.state = 'hop';
       dog.t = 0;
       dog.lift = 0;
+      dog.landT = null;
 
       if (dr > 0 && row > dog.bestRow) {
         dog.bestRow = row;
@@ -335,9 +364,9 @@
         this.sound.sidestep();
       }
 
-      Effects.burst(this.effects, dog.x, dog.y + 24, {
-        count: 5, speed: 70, life: 0.35, size: 3, gravity: 120, lift: 40,
-        colors: ['#F4E8CC', '#D8C7A2'],
+      Effects.burst(this.effects, dog.x, dog.y + 20, {
+        count: 6, speed: 80, life: 0.35, size: 3, gravity: 120, lift: 40,
+        colors: ['#F4E8CC', '#D8C7A2', '#E9DCC0'],
       });
     }
 
@@ -350,6 +379,7 @@
       dog.y = to.y;
       dog.state = 'idle';
       dog.lift = 0;
+      dog.landT = 0;
 
       if (dog.row === this.level.goalRow) {
         this.crossed();
@@ -372,26 +402,26 @@
       this.comboTimer = COMBO_WINDOW;
       const points = 50 * Math.min(this.combo, 5);
       this.sound.bone(this.combo);
-      Effects.burst(this.effects, colX(bone.col), rowY(bone.row), {
+      Effects.burst(this.effects, colX(bone.col), rowY(this.level.geo, bone.row), {
         count: 14, speed: 150, life: 0.6, kind: 'spark', size: 6, gravity: 120,
         colors: ['#FFFFFF', '#FFE066', '#8EC5FF'],
       });
-      this.addScore(points, colX(bone.col), rowY(bone.row) - 30, '#FFE066');
+      this.addScore(points, colX(bone.col), rowY(this.level.geo, bone.row) - 30, '#FFE066');
       this.rumble(0, 0.25, 60);
     }
 
     crossed() {
       const x = colX(this.dog.col);
-      const y = rowY(this.level.goalRow);
+      const y = rowY(this.level.geo, this.level.goalRow);
       this.crossings += 1;
       this.queued = null;
       this.sound.crossing();
       this.rumble(0.4, 0.6, 180);
       Effects.burst(this.effects, x, y, {
-        count: 26, speed: 240, life: 0.9, kind: 'confetti', size: 5, gravity: 320, lift: 220,
+        count: 30, speed: 260, life: 0.9, kind: 'confetti', size: 5, gravity: 320, lift: 220,
         colors: ['#FFE066', '#7CF2C4', '#FFFFFF', '#FF8FD8'],
       });
-      Effects.text(this.effects, 'CROSSED!', W / 2, y - 46, '#7CF2C4', 40);
+      Effects.text(this.effects, 'CROSSED!', W / 2, y - 46, '#7CF2C4', 44);
       this.addScore(150, x, y - 80, '#FFE066');
 
       if (this.crossings >= this.level.def.crossings) {
@@ -414,7 +444,7 @@
       this.sound.levelClear();
       this.rumble(0.5, 0.5, 400);
       Effects.burst(this.effects, W / 2, H * 0.45, {
-        count: 48, speed: 300, life: 1.4, kind: 'confetti', size: 6, gravity: 280, lift: 240,
+        count: 52, speed: 320, life: 1.4, kind: 'confetti', size: 6, gravity: 280, lift: 240,
         colors: ['#FFE066', '#7CF2C4', '#FFFFFF', '#FF8FD8', '#8EC5FF'],
       });
       this.setMode('clear');
@@ -425,6 +455,7 @@
       dog.state = 'dead';
       dog.t = 0;
       dog.lift = 0;
+      dog.landT = null;
       this.queued = null;
       this.lives -= 1;
       this.levelDeaths += 1;
@@ -437,7 +468,7 @@
         count: 16, speed: 220, life: 0.8, kind: 'spark', size: 7, gravity: 200,
         colors: ['#FFE066', '#FFFFFF', '#FF5D8F'],
       });
-      Effects.text(this.effects, 'SPLAT!', dog.x, dog.y - 46, '#FF8FB0', 34);
+      Effects.text(this.effects, 'YIP!', dog.x, dog.y - 46, '#FF8FB0', 34);
     }
 
     closeCall() {
@@ -459,7 +490,7 @@
         if (this.lives < MAX_LIVES) {
           this.lives += 1;
           this.sound.extraLife();
-          Effects.text(this.effects, 'EXTRA LIFE!', W / 2, 150, '#FF8FD8', 30);
+          Effects.text(this.effects, 'EXTRA LIFE!', W / 2, 120, '#FF8FD8', 30);
         }
       }
     }
@@ -572,6 +603,11 @@
         }
       }
 
+      if (this.dog.landT !== null) {
+        this.dog.landT += dt;
+        if (this.dog.landT >= LAND_TIME) this.dog.landT = null;
+      }
+
       this.updateTraffic(dt);
       if (this.dog.state !== 'dead') this.checkHits();
 
@@ -605,7 +641,6 @@
     }
   }
 
-  // Also expose the internals the test harness needs.
   global.Dogger = global.Dogger || {};
   global.Dogger.Game = Game;
 

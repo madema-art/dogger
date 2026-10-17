@@ -1,7 +1,8 @@
 # Dogger
 
-A stylised, top-down Frogger-style game starring **Peanut**, a small white terrier with light brown spots.
-Help Peanut cross a busy street, ten levels of rising difficulty, without getting splattered.
+A top-down arcade crossing game starring **Peanut**, a tiny Jack Russell Terrier. Help Peanut cross a busy suburban street, ten levels of rising difficulty, without getting splattered.
+
+The whole board is visible at once, on a fixed 16:9 arcade screen. Nothing scrolls. Read the traffic, pick your gap, hop.
 
 ## Play
 
@@ -38,20 +39,33 @@ Lives are shown as paw prints. Each hit costs a life, and the level's progress i
 
 ## Levels
 
-| #  | Name               | Street                         | Traffic and hazards                          | Crossings |
-| -- | ------------------ | ------------------------------ | -------------------------------------------- | --------- |
-| 1  | Quiet Street       | 2 lanes                        | Hatchbacks and delivery vans, slow           | 3 |
-| 2  | Morning Rush       | 3 lanes                        | Faster, denser                               | 3 |
-| 3  | School Run         | 3 lanes                        | Buses join                                   | 4 |
-| 4  | Scooter Alley      | 4 lanes                        | E-scooters weave between lanes               | 4 |
-| 5  | Median Mayhem      | 4 lanes and a median           | Sports cars, traffic cones on the median     | 4 |
-| 6  | Delivery Day       | 5 lanes and a median           | Delivery bots                                | 5 |
-| 7  | Bus Lane Blitz     | 5 lanes and a median           | More cones, all vehicle types                | 5 |
-| 8  | Rush Hour          | 6 lanes and a median           | Fast and dense                               | 6 |
-| 9  | Electric Avenue    | 8 lanes and a median           | Much faster traffic                          | 6 |
-| 10 | Peanut's Big Walk  | 8 lanes and two medians        | Maximum speed and density                    | 8 |
+The board is a fixed screen of up to 12 strips (sidewalk, lanes, medians, far curb). Each lane has an identity:
 
-Level definitions live in [`js/levels.js`](js/levels.js). Change `speed`, `gap`, `pool`, `cones`, `bones` or `crossings` there to retune the game.
+| Code | Lane | Traffic |
+| --- | --- | --- |
+| `R` | commuter | compacts, sedans, SUVs, rideshare cars, pickups; medium speed |
+| `H` | heavy | buses, vans, pickups; slow, long gaps |
+| `F` | fast | sports cars and sedans; quick and sparse |
+| `D` | delivery | vans and delivery robots in bunches, then a pause |
+| `B` | bike lane | cyclists, scooters, robots; slow, along the curb |
+| `M` | median | safe strip; cones, barriers and parked vans can stand here |
+
+Lanes alternate direction from bottom to top. Yellow centre lines separate opposing traffic.
+
+| # | Name | Board | Notes | Crossings |
+| - | --- | --- | --- | --- |
+| 1 | Quiet Street | 5 lanes | Gentle commuter and fast lanes | 3 |
+| 2 | Morning Rush | 5 lanes | Faster everywhere | 3 |
+| 3 | Median Break | 6 lanes, 1 median | First safe strip, first cones | 4 |
+| 4 | School Run | 6 lanes, 1 median | Buses, barriers | 4 |
+| 5 | Bike Lane | 7 lanes, 1 median | Cyclists and scooters along the curb | 4 |
+| 6 | Delivery Day | 8 lanes, 1 median | Delivery bunches | 5 |
+| 7 | Roadworks | 8 lanes, 1 median | Barriers and parked vans | 5 |
+| 8 | Rush Hour | 8 lanes, 2 medians | Two safe strips | 6 |
+| 9 | Electric Avenue | 8 lanes, 2 medians | Tighter gaps, robots | 6 |
+| 10 | Peanut's Big Walk | 8 lanes, 2 medians | Full speed, every lane | 8 |
+
+Row height shrinks as lanes are added, so the whole board always fits on screen. Every level is checked for a route from start to goal around its obstacles.
 
 ## Project layout
 
@@ -59,14 +73,18 @@ Level definitions live in [`js/levels.js`](js/levels.js). Change `speed`, `gap`,
 index.html          page and canvas
 js/audio.js         synthesised sound effects (WebAudio, no sound files)
 js/levels.js        level table, grid geometry, layout builder
-js/render.js        street, backdrop, vehicles, Peanut, HUD, title and overlays
+js/levels.js        board geometry, lane identities, the ten levels, obstacle layout
+js/art-peanut.js    Peanut's gameplay sprite, drawn in code (directions, hop, landing, splat)
+js/art-vehicles.js  traffic painters: compact, sedan, rideshare, SUV, pickup, sport, van, bus, scooter, bike, robot
+js/art-board.js     the cached board: neighbourhood, lanes and markings, medians, sidewalks, decor
+js/render.js        per-frame drawing: moving things, HUD, title, overlays
 js/input.js         keyboard and gamepad input with edge detection and repeat
 js/game.js          game loop, screens, traffic, collisions, rewards, progression
-assets/peanut.png   Peanut's transparent sprite, cut from the photo
+assets/peanut.png   the photograph of Peanut, used on the title screen only
 tools/make_peanut_sprite.py   regenerates the sprite from the original photo
 ```
 
-The sprite comes from the photo's flat blue backdrop, so it is keyed out by colour and despilled at the edges. Rerun the tool with your own photo to swap Peanut out.
+Gameplay uses the illustrated Peanut from `js/art-peanut.js`, not the photograph. The title screen keeps the photograph.
 
 ## Play the latest build on Windows
 
@@ -120,7 +138,7 @@ The check is in `js/build-watch.js`. It only reads the local `version.json`. It 
 
 ## Notes
 
-- The game is designed for a 9:16 portrait window. It scales to fit any window and letterboxes the rest.
+- The game is a 16:9 fixed-screen board (1280x720 logical). It scales to any window and letterboxes the rest.
 - Sound effects are generated in the browser. Background music is not included yet.
 - Best score is stored in `localStorage` as a per-browser convenience.
 - Only the first setting (the neighbourhood street) is included. Further backgrounds can slot in beside `drawBackdrop` and `drawStreet` in `js/render.js`.
