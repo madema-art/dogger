@@ -283,15 +283,19 @@
         if (space >= lane.nextGap) {
           const type = lane.pool[Math.floor(Math.random() * lane.pool.length)];
           const spec = VEHICLES[type];
-          const x = lane.dir > 0 ? -6 - spec.w / 2 : W + 6 + spec.w / 2;
+          // Vehicles shrink a little when a lane is narrow, so they always sit inside their lane.
+          const k = Math.min(1, (lane.laneH - 8) / spec.h);
+          const w = spec.w * k;
+          const h = spec.h * k;
+          const x = lane.dir > 0 ? -6 - w / 2 : W + 6 + w / 2;
           const v = {
             type,
             kind: spec.kind,
             dir: lane.dir,
             x,
             y,
-            w: spec.w,
-            h: spec.h,
+            w,
+            h,
             phase: Math.random() * 6,
             near: false,
           };

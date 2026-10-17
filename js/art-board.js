@@ -342,9 +342,10 @@
     for (let r = 0; r < rows.length; r++) {
       const code = rows[r];
       const top = L.rowTop(geo, r);
-      if (isRoad(code)) paintRoad(g, top, geo.rowH, code);
-      else if (code === 'M') paintMedian(g, top, geo.rowH, mulberry32(level.index * 97 + r));
-      else paintSidewalk(g, top, geo.rowH, mulberry32(level.index * 31 + r));
+      const h = geo.heights[r];
+      if (isRoad(code)) paintRoad(g, top, h, code);
+      else if (code === 'M') paintMedian(g, top, h, mulberry32(level.index * 97 + r));
+      else paintSidewalk(g, top, h, mulberry32(level.index * 31 + r));
 
       const above = rows[r + 1];
       paintBoundary(g, top, code, above, { below: dirByRow[r], above: dirByRow[r + 1] });

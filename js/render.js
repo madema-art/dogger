@@ -258,7 +258,8 @@
   function drawDog(ctx, game) {
     const dog = game.dog;
     if (!dog || !game.peanutSprite) return;
-    const opts = { dir: dog.dir, t: game.t, alpha: 1 };
+    const size = Math.min(68, Math.round(game.level.geo.laneH * 1.2));
+    const opts = { dir: dog.dir, t: game.t, alpha: 1, size };
     if (dog.state === 'hop') {
       opts.pose = 'hop';
       opts.lift = dog.lift;
@@ -368,7 +369,7 @@
       const y = L.rowY(level.geo, o.row);
       if (o.kind === 'cone') drawCone(ctx, cx, y);
       else if (o.kind === 'barrier') drawBarrier(ctx, cx, y, o.span * L.COL_W - 14);
-      else if (o.kind === 'van') drawParkedVan(ctx, cx, y, o.span * L.COL_W - 10, Math.min(level.geo.rowH - 8, 46));
+      else if (o.kind === 'van') drawParkedVan(ctx, cx, y, o.span * L.COL_W - 10, Math.min(level.geo.heights[o.row] - 6, 46));
     }
 
     for (const b of game.bones) {

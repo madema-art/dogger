@@ -39,33 +39,29 @@ Lives are shown as paw prints. Each hit costs a life, and the level's progress i
 
 ## Levels
 
-The board is a fixed screen of up to 12 strips (sidewalk, lanes, medians, far curb). Each lane has an identity:
+Every level has the same street: ten lanes to cross, in two five-lane roads.
 
-| Code | Lane | Traffic |
-| --- | --- | --- |
-| `R` | commuter | compacts, sedans, SUVs, rideshare cars, pickups; medium speed |
-| `H` | heavy | buses, vans, pickups; slow, long gaps |
-| `F` | fast | sports cars and sedans; quick and sparse |
-| `D` | delivery | vans and delivery robots in bunches, then a pause |
-| `B` | bike lane | cyclists, scooters, robots; slow, along the curb |
-| `M` | median | safe strip; cones, barriers and parked vans can stand here |
+- **Road A** (the bottom five lanes) drives one way, to the right.
+- **Median** between the roads is the one safe strip in the middle. Cones, barriers and parked vans can stand on it.
+- **Road B** (the top five lanes) drives the opposite way, to the left.
+- Start on the sidewalk at the bottom; the far curb at the top is the goal.
 
-Lanes alternate direction from bottom to top. Yellow centre lines separate opposing traffic.
+Each lane has an identity that sets its traffic: `R` commuter, `H` heavy (buses and vans, slow), `F` fast (sports cars, sparse), `D` delivery (vans and robots in bunches), `B` bike lane (cyclists and scooters, slow, by the kerb). Identities can mix within a road, but the direction of each road never changes.
 
-| # | Name | Board | Notes | Crossings |
-| - | --- | --- | --- | --- |
-| 1 | Quiet Street | 5 lanes | Gentle commuter and fast lanes | 3 |
-| 2 | Morning Rush | 5 lanes | Faster everywhere | 3 |
-| 3 | Median Break | 6 lanes, 1 median | First safe strip, first cones | 4 |
-| 4 | School Run | 6 lanes, 1 median | Buses, barriers | 4 |
-| 5 | Bike Lane | 7 lanes, 1 median | Cyclists and scooters along the curb | 4 |
-| 6 | Delivery Day | 8 lanes, 1 median | Delivery bunches | 5 |
-| 7 | Roadworks | 8 lanes, 1 median | Barriers and parked vans | 5 |
-| 8 | Rush Hour | 8 lanes, 2 medians | Two safe strips | 6 |
-| 9 | Electric Avenue | 8 lanes, 2 medians | Tighter gaps, robots | 6 |
-| 10 | Peanut's Big Walk | 8 lanes, 2 medians | Full speed, every lane | 8 |
+| # | Name | Road A (bottom to median) | Road B (median to top) | Median | Crossings |
+| - | --- | --- | --- | --- | --- |
+| 1 | Quiet Street | commuter ×5 | commuter ×5 | - | 3 |
+| 2 | Morning Rush | commuter, commuter, heavy, commuter, fast | commuter ×4, fast | - | 3 |
+| 3 | Median Break | commuter, commuter, heavy, commuter, fast | same | 2 cones | 4 |
+| 4 | School Run | commuter, commuter, heavy, commuter, fast | heavy, commuter ×3, fast | cones, barrier | 4 |
+| 5 | Bike Lane | commuter, bike, heavy, commuter, fast | commuter, commuter, bike, commuter, fast | cones, barrier | 4 |
+| 6 | Delivery Day | commuter, delivery, heavy, commuter, fast | commuter, commuter, delivery, commuter, fast | 3 cones, barrier | 5 |
+| 7 | Roadworks | delivery, commuter, heavy, commuter, fast | commuter, commuter, delivery, commuter, fast | 3 cones, 2 barriers, van | 5 |
+| 8 | Rush Hour | commuter, delivery, heavy, fast, commuter | fast, commuter, delivery, commuter, bike | 3 cones, 2 barriers, van | 6 |
+| 9 | Electric Avenue | commuter, delivery, heavy, fast, commuter | fast, commuter, delivery, fast, bike | 4 cones, 2 barriers, 2 vans | 6 |
+| 10 | Peanut's Big Walk | fast, delivery, heavy, fast, commuter | fast, commuter, delivery, fast, bike | 4 cones, 2 barriers, 2 vans | 8 |
 
-Row height shrinks as lanes are added, so the whole board always fits on screen. Every level is checked for a route from start to goal around its obstacles.
+Difficulty rises through speed, gaps, the mix of lane identities, bunched delivery traffic, and the median obstacles. Every level is checked for a route from start to goal around its obstacles.
 
 ## Project layout
 
@@ -73,7 +69,7 @@ Row height shrinks as lanes are added, so the whole board always fits on screen.
 index.html          page and canvas
 js/audio.js         synthesised sound effects (WebAudio, no sound files)
 js/levels.js        level table, grid geometry, layout builder
-js/levels.js        board geometry, lane identities, the ten levels, obstacle layout
+js/levels.js        board geometry (two five-lane roads and a median), lane identities, the ten levels
 js/art-peanut.js    Peanut's gameplay sprite, drawn in code (directions, hop, landing, splat)
 js/art-vehicles.js  traffic painters: compact, sedan, rideshare, SUV, pickup, sport, van, bus, scooter, bike, robot
 js/art-board.js     the cached board: neighbourhood, lanes and markings, medians, sidewalks, decor

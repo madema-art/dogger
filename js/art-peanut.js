@@ -168,7 +168,7 @@
 
   // Draws Peanut centred on (x, y). `pose` is idle | hop | land | splat.
   function draw(ctx, sprite, x, y, opts) {
-    const { dir = 'up', pose = 'idle', t = 0, lift = 0, landT = 0, splatT = 0, alpha = 1 } = opts;
+    const { dir = 'up', pose = 'idle', t = 0, lift = 0, landT = 0, splatT = 0, alpha = 1, size = DRAW } = opts;
     let sx = 1;
     let sy = 1;
     let angle = ANGLE[dir] || 0;
@@ -200,7 +200,7 @@
     ctx.translate(x, y + dy);
     ctx.rotate(angle);
     ctx.scale(sx, sy);
-    ctx.drawImage(sprite, -DRAW / 2, -DRAW / 2, DRAW, DRAW);
+    ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
     ctx.restore();
   }
 

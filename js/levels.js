@@ -1,17 +1,24 @@
 // Dogger level design and board geometry.
 //
 // The board is a fixed screen, like a classic arcade crossing: every lane of every level is visible
-// at once and nothing scrolls. A level is a stack of strips, listed bottom (start) to top (goal):
+// at once and nothing scrolls. Every level has the same bones:
 //
-//   S  sidewalk, safe start            G  far curb, the goal
-//   M  median, safe strip (obstacles may stand here)
-//   R  commuter lane   (mixed cars, medium speed)
-//   H  heavy lane      (buses and vans, slow, long gaps)
-//   F  fast lane       (sports cars and sedans, quick and sparse)
-//   D  delivery lane   (vans and robots, bursty: groups then a pause)
-//   B  bike lane       (cyclists, scooters and robots, slow, close to the curb)
+//   G  far curb, the goal
+//   five lanes   (road group A)   every vehicle in group A drives the same way
+//   M  median    the one safe strip in the middle, between the two roads
+//   five lanes   (road group B)   every vehicle in group B drives the opposite way
+//   S  sidewalk, the safe start
 //
-// Lanes alternate direction from bottom to top, so traffic always flows both ways.
+// That is ten lanes to cross. Each lane has an identity that sets its traffic character:
+//
+//   R  commuter  (mixed cars, medium speed)
+//   H  heavy     (buses and vans, slow, long gaps)
+//   F  fast      (sports cars and sedans, quick and sparse)
+//   D  delivery  (vans and robots, bursty: groups then a pause)
+//   B  bike lane (cyclists, scooters and robots, slow, close to the kerb)
+//
+// Identities can mix within a group, but the direction rule never changes: group A drives right and
+// group B drives left, so the player can read the flow of the whole street.
 (function (global) {
   'use strict';
 
@@ -22,17 +29,27 @@
   const START_COL = 7;
   const HUD_H = 62;
   const BOARD_BOTTOM = HEIGHT - 10;
-  const MAX_ROW_H = 72;
+  const MEDIAN_WEIGHT = 0.6; // the median is narrower than a traffic lane
 
-  // Fits any number of strips inside the screen under the HUD. Rows get shorter as levels add lanes.
-  function geometry(rowCount) {
-    const rowH = Math.min(MAX_ROW_H, Math.floor((BOARD_BOTTOM - HUD_H - 8) / rowCount));
-    return { rowH, bottom: BOARD_BOTTOM, top: BOARD_BOTTOM - rowCount * rowH };
+  // Lays out the strips from `codes` (bottom to top) so they fill the screen under the HUD.
+  // Lanes share one height; the median is a narrower strip. Heights are integers.
+  function geometry(codes) {
+    const avail = BOARD_BOTTOM - HUD_H - 8;
+    const weight = codes.map((c) => (c === 'M' ? MEDIAN_WEIGHT : 1));
+    const unit = avail / weight.reduce((a, b) => a + b, 0);
+    const heights = weight.map((w) => Math.floor(w * unit));
+    const tops = [];
+    let y = BOARD_BOTTOM;
+    heights.forEach((h, r) => {
+      y -= h;
+      tops[r] = y;
+    });
+    return { heights, tops, bottom: BOARD_BOTTOM, top: y, laneH: Math.floor(unit) };
   }
 
   const colX = (col) => col * COL_W + COL_W / 2;
-  const rowY = (geo, row) => geo.bottom - (row + 0.5) * geo.rowH;
-  const rowTop = (geo, row) => geo.bottom - (row + 1) * geo.rowH;
+  const rowTop = (geo, row) => geo.tops[row];
+  const rowY = (geo, row) => geo.tops[row] + geo.heights[row] / 2;
 
   // Vehicle sizes in logical pixels, all drawn facing right. Hit boxes use these too.
   // kind: which painter draws it (see art-vehicles.js).
@@ -71,23 +88,30 @@
     B: { kind: 'road', identity: 'bike' },
   };
 
-  // Ten levels, each one a clear step up.
-  //   rows:   strip layout (see the key above)
+  // Ten levels, each one a clear step up. Every layout has the same ten lanes:
+  // five in group A (driving right), a median, and five in group B (driving left).
+  //   rows:   the strip codes, bottom to top (see the key above)
   //   speed:  base speed in px/s for commuter lanes (other identities scale from it)
   //   gap:    minimum space between vehicles in a lane, before the identity scaling
-  //   cones / barriers / vans: obstacles placed on median strips
+  //   cones / barriers / vans: obstacles placed on the median
   //   bones / crossings: pickups on the board, and trips across needed to clear the level
+  const LAYOUT = {
+    rowsOf(groupA, groupB) {
+      return 'S' + groupA + 'M' + groupB + 'G';
+    },
+  };
+
   const LEVELS = [
-    { name: 'Quiet Street', tag: 'Five lanes of school-run traffic. Hop when the gap opens.', rows: 'SRRHRFG', speed: 74, gap: 260, cones: 0, barriers: 0, vans: 0, bones: 4, crossings: 3 },
-    { name: 'Morning Rush', tag: 'The commuters are up. Watch the fast lane.', rows: 'SRRHRFG', speed: 90, gap: 240, cones: 0, barriers: 0, vans: 0, bones: 5, crossings: 3 },
-    { name: 'Median Break', tag: 'A safe median splits the street. Rest there.', rows: 'SRRHMRFRG', speed: 102, gap: 230, cones: 2, barriers: 0, vans: 0, bones: 5, crossings: 4 },
-    { name: 'School Run', tag: 'Buses take the heavy lane. Give them room.', rows: 'SRRHMRFRG', speed: 114, gap: 210, cones: 2, barriers: 1, vans: 0, bones: 6, crossings: 4 },
-    { name: 'Bike Lane', tag: 'Cyclists and scooters roll along the curb.', rows: 'SRRHMRFRBG', speed: 124, gap: 200, cones: 2, barriers: 1, vans: 0, bones: 6, crossings: 4 },
-    { name: 'Delivery Day', tag: 'Delivery vans come in bunches, then pause.', rows: 'SRRHMRDFRBG', speed: 136, gap: 190, cones: 3, barriers: 1, vans: 0, bones: 7, crossings: 5 },
-    { name: 'Roadworks', tag: 'Barriers close the median. Find a clear cell.', rows: 'SRRHMRDFRBG', speed: 148, gap: 178, cones: 3, barriers: 2, vans: 1, bones: 7, crossings: 5 },
-    { name: 'Rush Hour', tag: 'Two medians now. Commuters all the way.', rows: 'SRRHMRDFMRBG', speed: 160, gap: 168, cones: 3, barriers: 2, vans: 1, bones: 8, crossings: 6 },
-    { name: 'Electric Avenue', tag: 'Faster lanes, tighter gaps, robots in the bike lane.', rows: 'SRRHMRDFMRBG', speed: 174, gap: 156, cones: 4, barriers: 2, vans: 2, bones: 8, crossings: 6 },
-    { name: "Peanut's Big Walk", tag: 'Every lane at full speed. Every gap counts.', rows: 'SRRHMRDFMRBG', speed: 192, gap: 146, cones: 4, barriers: 2, vans: 2, bones: 9, crossings: 8 },
+    { name: 'Quiet Street', tag: 'Two five-lane roads. Each one flows one way.', rows: LAYOUT.rowsOf('RRRRR', 'RRRRR'), speed: 70, gap: 280, cones: 0, barriers: 0, vans: 0, bones: 4, crossings: 3 },
+    { name: 'Morning Rush', tag: 'The fast lane joins the commute.', rows: LAYOUT.rowsOf('RRHRF', 'RRRRF'), speed: 84, gap: 250, cones: 0, barriers: 0, vans: 0, bones: 5, crossings: 3 },
+    { name: 'Median Break', tag: 'The median is your only rest stop. Two cones guard it.', rows: LAYOUT.rowsOf('RRHRF', 'RRHRF'), speed: 96, gap: 230, cones: 2, barriers: 0, vans: 0, bones: 5, crossings: 4 },
+    { name: 'School Run', tag: 'Buses on both roads. Give them room.', rows: LAYOUT.rowsOf('RRHRF', 'HRRRF'), speed: 108, gap: 215, cones: 2, barriers: 1, vans: 0, bones: 6, crossings: 4 },
+    { name: 'Bike Lane', tag: 'Cyclists ride the kerbs on both roads.', rows: LAYOUT.rowsOf('RBHRF', 'RRBRF'), speed: 118, gap: 200, cones: 2, barriers: 1, vans: 0, bones: 6, crossings: 4 },
+    { name: 'Delivery Day', tag: 'Delivery vans arrive in bunches, then pause.', rows: LAYOUT.rowsOf('RDHRF', 'RRDRF'), speed: 130, gap: 190, cones: 3, barriers: 1, vans: 0, bones: 7, crossings: 5 },
+    { name: 'Roadworks', tag: 'Barriers close the median. Find a clear cell.', rows: LAYOUT.rowsOf('DRHRF', 'RRDRF'), speed: 142, gap: 178, cones: 3, barriers: 2, vans: 1, bones: 7, crossings: 5 },
+    { name: 'Rush Hour', tag: 'Fast lanes on both sides. Commuters everywhere.', rows: LAYOUT.rowsOf('RDHFR', 'FRDRB'), speed: 156, gap: 166, cones: 3, barriers: 2, vans: 1, bones: 8, crossings: 6 },
+    { name: 'Electric Avenue', tag: 'Tighter gaps, robots in the bike lanes.', rows: LAYOUT.rowsOf('RDHFR', 'FRDFB'), speed: 170, gap: 154, cones: 4, barriers: 2, vans: 2, bones: 8, crossings: 6 },
+    { name: "Peanut's Big Walk", tag: 'Full speed on both roads. Every gap counts.', rows: LAYOUT.rowsOf('FDHFR', 'FRDFB'), speed: 186, gap: 144, cones: 4, barriers: 2, vans: 2, bones: 9, crossings: 8 },
   ];
 
   function shuffle(list, rand) {
@@ -99,31 +123,32 @@
   }
 
   // Turns a level definition into a concrete board: lanes with directions, speeds and vehicle pools,
-  // plus the obstacle cells that sit on median strips.
+  // plus the obstacle cells that sit on the median.
   function build(index, rand = Math.random) {
     const def = LEVELS[index];
     const rows = def.rows.split('');
-    const geo = geometry(rows.length);
+    const geo = geometry(rows);
     const lanes = [];
 
-    let dir = rand() < 0.5 ? 1 : -1;
+    // Group A (below the median) drives right, group B (above it) drives left.
+    const medianRow = rows.indexOf('M');
     rows.forEach((code, row) => {
       const type = ROW_TYPES[code];
       if (type.kind !== 'road') return;
       const id = IDENTITY[type.identity];
       lanes.push({
         row,
-        dir,
+        dir: row < medianRow ? 1 : -1,
         identity: type.identity,
         pool: id.pool,
         bursty: id.bursty,
         speed: def.speed * id.speed * (0.9 + rand() * 0.2),
         gapMin: def.gap * id.gap,
+        laneH: geo.heights[row],
       });
-      dir = -dir;
     });
 
-    // Obstacles only stand on median strips, so every crossing always has a way through.
+    // Obstacles only stand on the median, so every crossing always has a way through.
     const medianCells = [];
     rows.forEach((code, row) => {
       if (code !== 'M') return;
@@ -138,9 +163,9 @@
         const cells = [];
         for (let s = 0; s < span; s++) cells.push({ col: cell.col + s, row: cell.row });
         if (cells.some((c) => c.col >= COLS || taken.has(key(c.col, c.row)))) continue;
-        // Keep at least one clear cell on every median row.
-        const rowBlocked = obstacles.filter((o) => o.row === cell.row).reduce((n, o) => n + o.span, 0) + span;
-        if (rowBlocked > COLS - 4) continue;
+        // Keep at least four clear cells on the median.
+        const used = obstacles.reduce((n, o) => n + o.span, 0) + span;
+        if (used > COLS - 4) continue;
         cells.forEach((c) => taken.add(key(c.col, c.row)));
         obstacles.push({ kind, col: cell.col, row: cell.row, span });
         count--;
@@ -156,6 +181,7 @@
       rows,
       rowCount: rows.length,
       goalRow: rows.length - 1,
+      medianRow,
       geo,
       lanes,
       obstacles,
@@ -171,7 +197,6 @@
     COL_W,
     START_COL,
     HUD_H,
-    MAX_ROW_H,
     VEHICLES,
     IDENTITY,
     LEVELS,
