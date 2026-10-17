@@ -73,6 +73,7 @@
       this.sound = new D.Sound();
       this.input = new D.Input(() => this.sound.unlock());
       this.best = readBest();
+      this.buildWatch = new D.BuildWatch();
       this.t = 0;
       this.modeT = 0;
       this.mode = 'loading';
@@ -491,6 +492,7 @@
       }
       const p = this.input.poll(dt);
       Effects.update(this.effects, dt);
+      if (this.buildWatch.update(dt, this.mode === 'title')) global.location.reload();
 
       switch (this.mode) {
         case 'title':

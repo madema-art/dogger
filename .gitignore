@@ -1,0 +1,2 @@
+# Written by the launcher on every start: the commit this copy is running (read by the browser).
+version.json

@@ -837,6 +837,9 @@
       const msg = game.input.padConnected ? 'Controller ready!' : 'Controller disconnected';
       text(ctx, msg, W / 2, 40, 18, '#7CF2C4', { weight: 800 });
     }
+
+    const note = game.buildWatch.label();
+    if (note) text(ctx, note, W / 2, 66, 16, '#FFE066', { weight: 800 });
   }
 
   function drawLoading(ctx, t) {
