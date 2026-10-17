@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Dogger</title>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: #06183a;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Fit the 9:16 play field to the window, letterboxing the rest. */
+    canvas {
+      display: block;
+      width: min(100vw, calc(100vh * 9 / 16));
+      height: auto;
+      aspect-ratio: 9 / 16;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="540" height="960" tabindex="0" aria-label="Dogger: help Peanut cross the street"></canvas>
+
+  <script src="js/audio.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
