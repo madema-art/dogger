@@ -291,6 +291,18 @@
     }
   }
 
+  // The far row: a hedge line with openings. The white houses are drawn live, on top of it.
+  function paintHedgeRow(g, top, h, rnd) {
+    const grad = g.createLinearGradient(0, top, 0, top + h);
+    grad.addColorStop(0, '#6cb865');
+    grad.addColorStop(1, '#4f9a4e');
+    g.fillStyle = grad;
+    g.fillRect(0, top, W, h);
+    for (let x = 0; x < W; x += 34) {
+      shrub(g, x + 10, top + h / 2 + (rnd() - 0.5) * 6, 17 + rnd() * 3);
+    }
+  }
+
   // Kerbs and lane lines along each boundary. `below` is the strip under the boundary, `above` the strip over it.
   function paintBoundary(g, y, below, above, dirs) {
     if (isRoad(below) && isRoad(above)) {
@@ -345,6 +357,7 @@
       const h = geo.heights[r];
       if (isRoad(code)) paintRoad(g, top, h, code);
       else if (code === 'M') paintMedian(g, top, h, mulberry32(level.index * 97 + r));
+      else if (code === 'G') paintHedgeRow(g, top, h, mulberry32(level.index * 41 + r));
       else paintSidewalk(g, top, h, mulberry32(level.index * 31 + r));
 
       const above = rows[r + 1];
@@ -391,12 +404,6 @@
           if (pick < 0.4) bin(g, x, y, ['#3b6e5a', '#5d6470'][Math.floor(rnd() * 2)]);
           else if (pick < 0.7) hydrant(g, x, y);
           else flowers(g, x, y, rnd);
-        }
-      } else if (code === 'G') {
-        for (let x = 0; x < W; x += 160) {
-          g.fillStyle = 'rgba(217,120,73,0.35)';
-          g.beginPath(); g.arc(x + 40, y, 4, 0, TAU); g.fill();
-          g.beginPath(); g.arc(x + 58, y - 6, 2.4, 0, TAU); g.fill();
         }
       } else if (code === 'M') {
         for (let x = 110; x < W; x += 340 + rnd() * 60) streetLamp(g, x, y - 6);

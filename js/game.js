@@ -8,6 +8,7 @@
   const W = L.WIDTH;
   const H = L.HEIGHT;
   const { COLS, START_COL, VEHICLES, colX, rowY } = L;
+  const ENTER_TIME = 0.45;
 
   const HOP_TIME = 0.12;
   const LAND_TIME = 0.1;
@@ -225,6 +226,7 @@
         spawned: 0,
       }));
       this.crossings = 0;
+      this.homes = this.level.homeCols.map(() => false);
       this.levelDeaths = 0;
       this.combo = 0;
       this.comboTimer = 0;
@@ -414,20 +416,31 @@
       this.rumble(0, 0.25, 60);
     }
 
+    // Peanut reached a home opening. The house is claimed for the rest of the level, and Peanut
+    // steps into the doorway before the next trip starts.
     crossed() {
-      const x = colX(this.dog.col);
-      const y = rowY(this.level.geo, this.level.goalRow);
-      this.crossings += 1;
+      const dog = this.dog;
+      const idx = this.level.homeCols.indexOf(dog.col);
       this.queued = null;
+      this.homes[idx] = true;
+      this.level.blocked.add(dog.col + ':' + this.level.goalRow);
+      this.crossings = this.homes.filter(Boolean).length;
+      dog.state = 'enter';
+      dog.t = 0;
+      dog.homeIdx = idx;
       this.sound.crossing();
       this.rumble(0.4, 0.6, 180);
+      const x = colX(dog.col);
+      const y = rowY(this.level.geo, this.level.goalRow);
       Effects.burst(this.effects, x, y, {
         count: 30, speed: 260, life: 0.9, kind: 'confetti', size: 5, gravity: 320, lift: 220,
         colors: ['#FFE066', '#7CF2C4', '#FFFFFF', '#FF8FD8'],
       });
-      Effects.text(this.effects, 'CROSSED!', W / 2, y - 46, '#7CF2C4', 44);
+      Effects.text(this.effects, 'HOME!', x, y - 46, '#7CF2C4', 44);
       this.addScore(150, x, y - 80, '#FFE066');
+    }
 
+    finishCrossing() {
       if (this.crossings >= this.level.def.crossings) {
         this.clearLevel();
         return;
@@ -596,6 +609,12 @@
       } else if (dog.state === 'spawn') {
         dog.t += dt;
         if (dog.t >= SPAWN_TIME) dog.state = 'idle';
+      } else if (dog.state === 'enter') {
+        dog.t += dt;
+        if (dog.t >= ENTER_TIME) {
+          this.finishCrossing();
+          return;
+        }
       } else if (dog.state === 'dead') {
         dog.t += dt;
         if (dog.t >= DEATH_TIME) {

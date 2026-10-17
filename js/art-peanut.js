@@ -168,7 +168,7 @@
 
   // Draws Peanut centred on (x, y). `pose` is idle | hop | land | splat.
   function draw(ctx, sprite, x, y, opts) {
-    const { dir = 'up', pose = 'idle', t = 0, lift = 0, landT = 0, splatT = 0, alpha = 1, size = DRAW } = opts;
+    const { dir = 'up', pose = 'idle', t = 0, lift = 0, landT = 0, splatT = 0, alpha = 1, size = DRAW, shrink = 0 } = opts;
     let sx = 1;
     let sy = 1;
     let angle = ANGLE[dir] || 0;
@@ -194,6 +194,11 @@
       sy = 1 - 0.35 * k;
       a = alpha * Math.max(0, 1 - Math.max(0, (splatT - 0.5) / 0.45));
     }
+
+    // Stepping through a doorway: Peanut shrinks and fades into the house.
+    sx *= 1 - 0.75 * shrink;
+    sy *= 1 - 0.75 * shrink;
+    a *= 1 - shrink;
 
     ctx.save();
     ctx.globalAlpha = Math.max(0, a);

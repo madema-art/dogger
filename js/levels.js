@@ -27,6 +27,9 @@
   const COLS = 16;
   const COL_W = 80;
   const START_COL = 7;
+  // The five home openings in the far hedge. Each one is a house Peanut has to reach.
+  const HOME_COLS = [2, 5, 8, 11, 14];
+  const HOMES_PER_LEVEL = 5;
   const HUD_H = 62;
   const BOARD_BOTTOM = HEIGHT - 10;
   const MEDIAN_WEIGHT = 0.6; // the median is narrower than a traffic lane
@@ -102,16 +105,16 @@
   };
 
   const LEVELS = [
-    { name: 'Quiet Street', tag: 'Two five-lane roads. Each one flows one way.', rows: LAYOUT.rowsOf('RRRRR', 'RRRRR'), speed: 70, gap: 280, cones: 0, barriers: 0, vans: 0, bones: 4, crossings: 3 },
-    { name: 'Morning Rush', tag: 'The fast lane joins the commute.', rows: LAYOUT.rowsOf('RRHRF', 'RRRRF'), speed: 84, gap: 250, cones: 0, barriers: 0, vans: 0, bones: 5, crossings: 3 },
-    { name: 'Median Break', tag: 'The median is your only rest stop. Two cones guard it.', rows: LAYOUT.rowsOf('RRHRF', 'RRHRF'), speed: 96, gap: 230, cones: 2, barriers: 0, vans: 0, bones: 5, crossings: 4 },
-    { name: 'School Run', tag: 'Buses on both roads. Give them room.', rows: LAYOUT.rowsOf('RRHRF', 'HRRRF'), speed: 108, gap: 215, cones: 2, barriers: 1, vans: 0, bones: 6, crossings: 4 },
-    { name: 'Bike Lane', tag: 'Cyclists ride the kerbs on both roads.', rows: LAYOUT.rowsOf('RBHRF', 'RRBRF'), speed: 118, gap: 200, cones: 2, barriers: 1, vans: 0, bones: 6, crossings: 4 },
-    { name: 'Delivery Day', tag: 'Delivery vans arrive in bunches, then pause.', rows: LAYOUT.rowsOf('RDHRF', 'RRDRF'), speed: 130, gap: 190, cones: 3, barriers: 1, vans: 0, bones: 7, crossings: 5 },
-    { name: 'Roadworks', tag: 'Barriers close the median. Find a clear cell.', rows: LAYOUT.rowsOf('DRHRF', 'RRDRF'), speed: 142, gap: 178, cones: 3, barriers: 2, vans: 1, bones: 7, crossings: 5 },
-    { name: 'Rush Hour', tag: 'Fast lanes on both sides. Commuters everywhere.', rows: LAYOUT.rowsOf('RDHFR', 'FRDRB'), speed: 156, gap: 166, cones: 3, barriers: 2, vans: 1, bones: 8, crossings: 6 },
-    { name: 'Electric Avenue', tag: 'Tighter gaps, robots in the bike lanes.', rows: LAYOUT.rowsOf('RDHFR', 'FRDFB'), speed: 170, gap: 154, cones: 4, barriers: 2, vans: 2, bones: 8, crossings: 6 },
-    { name: "Peanut's Big Walk", tag: 'Full speed on both roads. Every gap counts.', rows: LAYOUT.rowsOf('FDHFR', 'FRDFB'), speed: 186, gap: 144, cones: 4, barriers: 2, vans: 2, bones: 9, crossings: 8 },
+    { name: 'Quiet Street', tag: 'Two five-lane roads. Each one flows one way.', rows: LAYOUT.rowsOf('RRRRR', 'RRRRR'), speed: 70, gap: 280, cones: 0, barriers: 0, vans: 0, bones: 4, crossings: HOMES_PER_LEVEL },
+    { name: 'Morning Rush', tag: 'The fast lane joins the commute.', rows: LAYOUT.rowsOf('RRHRF', 'RRRRF'), speed: 84, gap: 250, cones: 0, barriers: 0, vans: 0, bones: 5, crossings: HOMES_PER_LEVEL },
+    { name: 'Median Break', tag: 'The median is your only rest stop. Two cones guard it.', rows: LAYOUT.rowsOf('RRHRF', 'RRHRF'), speed: 96, gap: 230, cones: 2, barriers: 0, vans: 0, bones: 5, crossings: HOMES_PER_LEVEL },
+    { name: 'School Run', tag: 'Buses on both roads. Give them room.', rows: LAYOUT.rowsOf('RRHRF', 'HRRRF'), speed: 108, gap: 215, cones: 2, barriers: 1, vans: 0, bones: 6, crossings: HOMES_PER_LEVEL },
+    { name: 'Bike Lane', tag: 'Cyclists ride the kerbs on both roads.', rows: LAYOUT.rowsOf('RBHRF', 'RRBRF'), speed: 118, gap: 200, cones: 2, barriers: 1, vans: 0, bones: 6, crossings: HOMES_PER_LEVEL },
+    { name: 'Delivery Day', tag: 'Delivery vans arrive in bunches, then pause.', rows: LAYOUT.rowsOf('RDHRF', 'RRDRF'), speed: 130, gap: 190, cones: 3, barriers: 1, vans: 0, bones: 7, crossings: HOMES_PER_LEVEL },
+    { name: 'Roadworks', tag: 'Barriers close the median. Find a clear cell.', rows: LAYOUT.rowsOf('DRHRF', 'RRDRF'), speed: 142, gap: 178, cones: 3, barriers: 2, vans: 1, bones: 7, crossings: HOMES_PER_LEVEL },
+    { name: 'Rush Hour', tag: 'Fast lanes on both sides. Commuters everywhere.', rows: LAYOUT.rowsOf('RDHFR', 'FRDRB'), speed: 156, gap: 166, cones: 3, barriers: 2, vans: 1, bones: 8, crossings: HOMES_PER_LEVEL },
+    { name: 'Electric Avenue', tag: 'Tighter gaps, robots in the bike lanes.', rows: LAYOUT.rowsOf('RDHFR', 'FRDFB'), speed: 170, gap: 154, cones: 4, barriers: 2, vans: 2, bones: 8, crossings: HOMES_PER_LEVEL },
+    { name: "Peanut's Big Walk", tag: 'Full speed on both roads. Every gap counts.', rows: LAYOUT.rowsOf('FDHFR', 'FRDFB'), speed: 186, gap: 144, cones: 4, barriers: 2, vans: 2, bones: 9, crossings: HOMES_PER_LEVEL },
   ];
 
   function shuffle(list, rand) {
@@ -156,6 +159,9 @@
     });
     const obstacles = [];
     const taken = new Set();
+    for (let col = 0; col < COLS; col++) {
+      if (!HOME_COLS.includes(col)) taken.add(col + ':' + (rows.length - 1));
+    }
     const key = (c, r) => c + ':' + r;
     const place = (kind, count, span) => {
       for (const cell of shuffle(medianCells.slice(), rand)) {
@@ -181,6 +187,7 @@
       rows,
       rowCount: rows.length,
       goalRow: rows.length - 1,
+      homeCols: HOME_COLS.slice(),
       medianRow,
       geo,
       lanes,
@@ -206,5 +213,7 @@
     rowY,
     rowTop,
     shuffle,
+    HOME_COLS,
+    HOMES_PER_LEVEL,
   };
 })(window);

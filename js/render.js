@@ -253,6 +253,73 @@
     ctx.restore();
   }
 
+  // A little white house with a pitched roof, seen from above. The doorway faces the street.
+  // Empty houses have a soft beacon; a claimed house has its door open and a paw badge.
+  function drawHome(ctx, x, y, filled, t) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(12,30,20,0.28)';
+    ctx.beginPath(); ctx.ellipse(x + 5, y + 20, 32, 8, 0, 0, TAU); ctx.fill();
+
+    if (!filled) {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 3.2 + x * 0.05);
+      glow(ctx, x, y + 14, 34, '255,236,160', 0.18 + 0.2 * pulse);
+    }
+
+    // Walls.
+    rr(ctx, x - 25, y - 4, 50, 26, 3);
+    ctx.fillStyle = '#fbfbf6';
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = '#7f8a9c';
+    ctx.stroke();
+    // Windows.
+    for (const wx of [x - 17, x + 9]) {
+      rr(ctx, wx, y + 1, 8, 8, 1.5);
+      ctx.fillStyle = '#9fdcf5';
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#7f8a9c';
+      ctx.stroke();
+    }
+    // Doorway: dark when empty, open and warm once claimed.
+    rr(ctx, x - 6, y + 6, 12, 16, 2);
+    ctx.fillStyle = filled ? '#ffd166' : '#4e3324';
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = '#4a2f1d';
+    ctx.stroke();
+
+    // Pitched roof: two sloping planes with a ridge down the middle.
+    ctx.beginPath();
+    ctx.moveTo(x - 31, y - 3);
+    ctx.lineTo(x - 26, y - 25);
+    ctx.lineTo(x + 26, y - 25);
+    ctx.lineTo(x + 31, y - 3);
+    ctx.closePath();
+    const roof = ctx.createLinearGradient(0, y - 25, 0, y - 3);
+    roof.addColorStop(0, '#ffffff');
+    roof.addColorStop(1, '#dde5ef');
+    ctx.fillStyle = roof;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#7f8a9c';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - 26, y - 14);
+    ctx.lineTo(x + 26, y - 14);
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(90,100,120,0.55)';
+    ctx.stroke();
+    // Chimney.
+    ctx.fillStyle = '#c9785b';
+    ctx.fillRect(x + 13, y - 33, 6, 10);
+
+    if (filled) {
+      paw(ctx, x + 30, y - 30, 14, '#7CF2C4');
+    }
+    ctx.restore();
+  }
+
   // ---------- Peanut ----------
 
   function drawDog(ctx, game) {
@@ -266,6 +333,9 @@
     } else if (dog.state === 'dead') {
       opts.pose = 'splat';
       opts.splatT = dog.t;
+    } else if (dog.state === 'enter') {
+      opts.pose = 'idle';
+      opts.shrink = Math.min(1, dog.t / 0.45);
     } else if (dog.state === 'spawn') {
       opts.pose = 'idle';
       opts.alpha = Math.min(1, dog.t / 0.35);
@@ -379,6 +449,11 @@
     for (const lane of game.lanes) {
       for (const v of lane.vehicles) D.Vehicles.drawVehicle(ctx, v, game.t);
     }
+
+    const homeY = L.rowY(level.geo, level.goalRow);
+    level.homeCols.forEach((col, i) => {
+      drawHome(ctx, L.colX(col), homeY, !!(game.homes && game.homes[i]), game.t);
+    });
 
     drawDog(ctx, game);
     Effects.draw(ctx, game.effects);

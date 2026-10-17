@@ -31,7 +31,7 @@ Holding a direction repeats the hop. A hop pressed mid-air is queued and played 
 - **+10** for each new row reached. Forward hops climb a pentatonic scale, so a long run sounds like a melody.
 - **Bones** (+50 each). Pick them up in quick succession for a **Bone Combo** that multiplies up to x5.
 - **Close call** (+25) when a vehicle passes within a whisker.
-- **Crossing** (+150) on each trip to the far curb. Bones refill after every crossing.
+- **Home** (+150) for each house Peanut reaches. Bones refill after every trip. Five homes complete a level.
 - **Level clear** bonus, with 1 to 3 stars based on how many times Peanut was hit.
 - **Extra life** every 2,000 points, up to five lives.
 
@@ -44,24 +44,24 @@ Every level has the same street: ten lanes to cross, in two five-lane roads.
 - **Road A** (the bottom five lanes) drives one way, to the right.
 - **Median** between the roads is the one safe strip in the middle. Cones, barriers and parked vans can stand on it.
 - **Road B** (the top five lanes) drives the opposite way, to the left.
-- Start on the sidewalk at the bottom; the far curb at the top is the goal.
+- Start on the sidewalk at the bottom. The far row is a hedge with five openings, each one a little white house. Peanut has to reach five houses to finish a level, and finishing Level 10 wins the game.
 
 Each lane has an identity that sets its traffic: `R` commuter, `H` heavy (buses and vans, slow), `F` fast (sports cars, sparse), `D` delivery (vans and robots in bunches), `B` bike lane (cyclists and scooters, slow, by the kerb). Identities can mix within a road, but the direction of each road never changes.
 
-| # | Name | Road A (bottom to median) | Road B (median to top) | Median | Crossings |
+| # | Name | Road A (bottom to median) | Road B (median to top) | Median | Houses |
 | - | --- | --- | --- | --- | --- |
-| 1 | Quiet Street | commuter ×5 | commuter ×5 | - | 3 |
-| 2 | Morning Rush | commuter, commuter, heavy, commuter, fast | commuter ×4, fast | - | 3 |
-| 3 | Median Break | commuter, commuter, heavy, commuter, fast | same | 2 cones | 4 |
-| 4 | School Run | commuter, commuter, heavy, commuter, fast | heavy, commuter ×3, fast | cones, barrier | 4 |
-| 5 | Bike Lane | commuter, bike, heavy, commuter, fast | commuter, commuter, bike, commuter, fast | cones, barrier | 4 |
+| 1 | Quiet Street | commuter ×5 | commuter ×5 | - | 5 |
+| 2 | Morning Rush | commuter, commuter, heavy, commuter, fast | commuter ×4, fast | - | 5 |
+| 3 | Median Break | commuter, commuter, heavy, commuter, fast | same | 2 cones | 5 |
+| 4 | School Run | commuter, commuter, heavy, commuter, fast | heavy, commuter ×3, fast | cones, barrier | 5 |
+| 5 | Bike Lane | commuter, bike, heavy, commuter, fast | commuter, commuter, bike, commuter, fast | cones, barrier | 5 |
 | 6 | Delivery Day | commuter, delivery, heavy, commuter, fast | commuter, commuter, delivery, commuter, fast | 3 cones, barrier | 5 |
 | 7 | Roadworks | delivery, commuter, heavy, commuter, fast | commuter, commuter, delivery, commuter, fast | 3 cones, 2 barriers, van | 5 |
-| 8 | Rush Hour | commuter, delivery, heavy, fast, commuter | fast, commuter, delivery, commuter, bike | 3 cones, 2 barriers, van | 6 |
-| 9 | Electric Avenue | commuter, delivery, heavy, fast, commuter | fast, commuter, delivery, fast, bike | 4 cones, 2 barriers, 2 vans | 6 |
-| 10 | Peanut's Big Walk | fast, delivery, heavy, fast, commuter | fast, commuter, delivery, fast, bike | 4 cones, 2 barriers, 2 vans | 8 |
+| 8 | Rush Hour | commuter, delivery, heavy, fast, commuter | fast, commuter, delivery, commuter, bike | 3 cones, 2 barriers, van | 5 |
+| 9 | Electric Avenue | commuter, delivery, heavy, fast, commuter | fast, commuter, delivery, fast, bike | 4 cones, 2 barriers, 2 vans | 5 |
+| 10 | Peanut's Big Walk | fast, delivery, heavy, fast, commuter | fast, commuter, delivery, fast, bike | 4 cones, 2 barriers, 2 vans | 5 |
 
-Difficulty rises through speed, gaps, the mix of lane identities, bunched delivery traffic, and the median obstacles. Every level is checked for a route from start to goal around its obstacles.
+Every level asks for five homes, so difficulty rises through speed, gaps, the mix of lane identities, bunched delivery traffic, and the median obstacles. Every level is checked for a route from start to goal around its obstacles.
 
 ## Project layout
 
